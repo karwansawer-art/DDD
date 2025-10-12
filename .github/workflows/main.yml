@@ -1,11 +1,11 @@
-name: The Real Final RDP (v22 - Ultimate Fix)
+name: The Real Final RDP (v22 - Ultimate Fix with 10-Hour Keep-Alive)
 on:
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
-    timeout-minutes: 360
+    timeout-minutes: 600 # زیادکرا بۆ 10 کاتژمێر
     steps:
       - name: Configure RDP
         run: |
@@ -71,6 +71,12 @@ jobs:
           Write-Host "Password:    ${{ env.RDP_PASS }}"
           Write-Host "========================================="
           
+      - name: Keep Session Alive
+        run: |
+          Write-Host "Session is now active. It will remain open for approximately 10 hours."
+          Write-Host "Press Ctrl+C in the log window to cancel the workflow earlier if needed."
+          Start-Sleep -Seconds 35700 # نزیکەی 10 کاتژمێر
+
       - name: Check Files Before Upload
         run: |
           Write-Host "Checking C:\Users\yusf2000\Desktop:"
@@ -98,4 +104,3 @@ jobs:
             Write-Host "No Service Account JSON found. Skipping upload."
           }
         continue-on-error: true
-
