@@ -1,0 +1,12 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+build/
+.idea/
+.vscode/
+android/
+ios/
+web/
+linux/
+windows/
+macos/
