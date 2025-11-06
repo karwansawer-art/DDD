@@ -1,0 +1,74 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Optional tag name to publish a GitHub release (e.g. v1.0.0)'
+        required: false
+        type: string
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Ensure Android platform scaffolding is present
+        run: flutter create . --platforms=android
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+      - name: Determine release metadata
+        id: release_meta
+        run: |
+          tag=""
+          name=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.release_tag }}" ]; then
+            tag="${{ inputs.release_tag }}"
+            name="${{ inputs.release_tag }}"
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            tag="${GITHUB_REF#refs/tags/}"
+            name="$tag"
+          else
+            tag="auto-build-${GITHUB_RUN_ID}"
+            name="Auto build #${GITHUB_RUN_ID}"
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_meta.outputs.tag }}
+          name: ${{ steps.release_meta.outputs.name }}
+          target_commitish: ${{ github.sha }}
+          files: build/app/outputs/flutter-apk/app-release.apk
+          generate_release_notes: true
